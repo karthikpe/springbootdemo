@@ -1,9 +1,11 @@
-# springboot / REST demo
+# springboot / REST / File demo
 
 A simple controller and service class to read the content of a file based on the user input.
 This includes unit tests.
 
-The app can be testing using the following API's
+Java version: 1.8
+
+The app can be tested using the following API's
 
 http://localhost:8888/
 - Returns all sightings: Only reported year
