@@ -34,14 +34,14 @@ public class UfoSightingServiceImpl implements UfoSightingService {
 
 	private static final Logger LOG = Logger.getLogger(UfoSightingServiceImpl.class.getName());
 
-	@Value("${ufoFile}")
-	private String filePath;
+	@Value("${fileName}")
+	private String srcFile;
 
 	@Override
 	public List<UfoSighting> getAllSightings() {
 		List<UfoSighting> ufoSightings = new ArrayList<>();
 		try {
-			ufoSightings = getUfoContent(getFilePath());
+			ufoSightings = getUfoContent();
 		} catch (UfoServiceException e) {
 			LOG.warning(e.getMessage());
 		}
@@ -52,7 +52,7 @@ public class UfoSightingServiceImpl implements UfoSightingService {
 	public List<UfoSighting> search(int yearSeen, int monthSeen) {
 		List<UfoSighting> ufoSightings = new ArrayList<>();
 		try {
-			ufoSightings = getUfoContent(getFilePath());
+			ufoSightings = getUfoContent();
 		} catch (UfoServiceException e) {
 			LOG.warning(e.getMessage());
 			return Collections.emptyList();
@@ -66,11 +66,10 @@ public class UfoSightingServiceImpl implements UfoSightingService {
 	/**
 	 * Method to read the file content and parse it to UfoSighting DTO.
 	 * 
-	 * @param filePath
 	 * @return list of objects
 	 */
-	protected List<UfoSighting> getUfoContent(String filePath) throws UfoServiceException {
-		final BufferedReader br = readFile(filePath);
+	protected List<UfoSighting> getUfoContent() throws UfoServiceException {
+		final BufferedReader br = readFile();
 		List<UfoSighting> ufoSightings = br.lines().map(line -> convertToUfoContent(line)).filter(Objects::nonNull)
 				.collect(Collectors.toList());
 		try {
@@ -84,17 +83,17 @@ public class UfoSightingServiceImpl implements UfoSightingService {
 	/**
 	 * Method to read file content.
 	 * 
-	 * @param filePath
 	 * @return buffered reader object
 	 * @throws UfoServiceException
 	 */
-	private BufferedReader readFile(String filePath) throws UfoServiceException {
-		final File file = new File(filePath);
+	private BufferedReader readFile() throws UfoServiceException {
+		File file = (srcFile == null) ? new File(UfoConstants.UFO_FILEPATH)
+				: new File(getClass().getClassLoader().getResource(srcFile).getFile());
 		InputStream is = null;
 		try {
 			is = new FileInputStream(file);
 		} catch (FileNotFoundException e) {
-			throw new UfoServiceException("File " + filePath + " cannot be located");
+			throw new UfoServiceException("File " + file.getName() + " cannot be read");
 		}
 		return new BufferedReader(new InputStreamReader(is));
 	}
@@ -114,10 +113,6 @@ public class UfoSightingServiceImpl implements UfoSightingService {
 			LOG.warning("Parsing error in line :" + line);
 		}
 		return ufoSighting;
-	}
-
-	private String getFilePath() {
-		return filePath == null ? UfoConstants.UFO_FILEPATH : filePath;
 	}
 
 }
