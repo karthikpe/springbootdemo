@@ -59,7 +59,7 @@ public class UfoSightingServiceImpl implements UfoSightingService {
 		}
 		final StringBuffer yrMonth = new StringBuffer();
 		yrMonth.append(yearSeen);
-		yrMonth.append(monthSeen);
+		yrMonth.append(monthSeen < 10 ? UfoConstants.ZERO + monthSeen : monthSeen);
 		return ufoSightings.stream().filter(ufo -> ufo.getDateSeen().contains(yrMonth)).collect(Collectors.toList());
 	}
 
