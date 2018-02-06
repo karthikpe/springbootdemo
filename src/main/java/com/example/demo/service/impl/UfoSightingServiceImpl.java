@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import com.example.demo.constant.UfoConstants;
 import com.example.demo.dto.UfoSighting;
@@ -50,32 +51,50 @@ public class UfoSightingServiceImpl implements UfoSightingService {
 
 	@Override
 	public List<UfoSighting> search(int yearSeen, int monthSeen) {
+		final StringBuffer yrMonth = new StringBuffer();
+		yrMonth.append(yearSeen);
+		yrMonth.append(monthSeen < 10 ? UfoConstants.ZERO + monthSeen : monthSeen);
 		List<UfoSighting> ufoSightings = new ArrayList<>();
 		try {
-			ufoSightings = getUfoContent();
+			ufoSightings = getUfoContent(yrMonth.toString());
 		} catch (UfoServiceException e) {
 			LOG.warning(e.getMessage());
 			return Collections.emptyList();
 		}
-		final StringBuffer yrMonth = new StringBuffer();
-		yrMonth.append(yearSeen);
-		yrMonth.append(monthSeen < 10 ? UfoConstants.ZERO + monthSeen : monthSeen);
-		return ufoSightings.stream().filter(ufo -> ufo.getDateSeen().contains(yrMonth)).collect(Collectors.toList());
+		return ufoSightings;
 	}
 
 	/**
-	 * Method to read the file content and parse it to UfoSighting DTO.
+	 * Method to read the file content and convert it to UfoSighting DTO.
 	 * 
 	 * @return list of objects
 	 */
 	protected List<UfoSighting> getUfoContent() throws UfoServiceException {
+		return getUfoContent(null);
+	}
+
+	/**
+	 * Method to read and search the file content and convert it to UfoSighting DTO.
+	 * 
+	 * @param yrMonth
+	 * @return list of objects
+	 */
+	protected List<UfoSighting> getUfoContent(String yrMonth) throws UfoServiceException {
+		List<UfoSighting> ufoSightings = new ArrayList<>();
 		final BufferedReader br = readFile();
-		List<UfoSighting> ufoSightings = br.lines().map(line -> convertToUfoContent(line)).filter(Objects::nonNull)
-				.collect(Collectors.toList());
 		try {
-			br.close();
-		} catch (IOException e) {
+			ufoSightings = br.lines()
+					.map(line -> convertToUfoContent(line, yrMonth))
+					.filter(Objects::nonNull)
+					.collect(Collectors.toList());
+		} catch (Exception e) {
 			LOG.warning(e.getMessage());
+		} finally {
+			try {
+				br.close();
+			} catch (IOException e) {
+				LOG.warning(e.getMessage());
+			}
 		}
 		return ufoSightings;
 	}
@@ -102,10 +121,14 @@ public class UfoSightingServiceImpl implements UfoSightingService {
 	 * Method to parse the line and create a DTO.
 	 * 
 	 * @param line
+	 * @param yrMonth
 	 * @return an object or null in case of parsing error
 	 */
-	private UfoSighting convertToUfoContent(String line) {
+	private UfoSighting convertToUfoContent(String line, String yrMonth) {
 		String[] values = line.split(UfoConstants.FILE_SEPARATOR);
+		if (!StringUtils.isEmpty(yrMonth) && !values[0].contains(yrMonth)) {
+			return null;
+		}
 		UfoSighting ufoSighting = null;
 		try {
 			ufoSighting = new UfoSighting(values[0], values[1], values[2], values[3], values[4], values[5]);
